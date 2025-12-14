@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<div class="container">
+  <div class="card user-card">
+
+    <div class="top-bar">
+      <h3 id="username">User</h3>
+      <button onclick="logout()">Logout</button>
+    </div>
+
+    <h2>Live Gas Level</h2>
+    <div class="value" id="gasValue">--</div>
+    <div class="status" id="status">Connecting...</div>
+
+    <h3>Recent Readings</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Gas Value</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="userTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const CHANNEL_ID = "3202976"; // 🔴 change
+const FIELD = "field1";
+const username = localStorage.getItem("loggedUser");
+
+document.getElementById("username").innerText =
+  username ? `Welcome, ${username}` : "Welcome";
+
+function fetchLive() {
+  fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds/last.json`)
+    .then(res => res.json())
+    .then(data => {
+      let gas = data[FIELD];
+      gasValue.innerText = gas;
+
+      if (gas > 400) {
+        status.innerText = "⚠️ Dangerous Gas Level";
+        status.style.color = "red";
+      } else {
+        status.innerText = "✅ Normal Air";
+        status.style.color = "lime";
+      }
+    });
+}
+
+function fetchTable() {
+  fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?results=5`)
+    .then(res => res.json())
+    .then(data => {
+      let rows = "";
+      data.feeds.forEach(f => {
+        let val = f[FIELD];
+        let st = val > 400 ? "Danger" : "Normal";
+        rows += `
+          <tr>
+            <td>${new Date(f.created_at).toLocaleTimeString()}</td>
+            <td>${val}</td>
+            <td>${st}</td>
+          </tr>`;
+      });
+      userTable.innerHTML = rows;
+    });
+}
+
+function logout() {
+  localStorage.removeItem("loggedUser");
+  window.location.href = "index_login.html";
+}
+
+// initial load
+fetchLive();
+fetchTable();
+setInterval(fetchLive, 5000);
+setInterval(fetchTable, 10000);
+</script>
+</body>
+</html>

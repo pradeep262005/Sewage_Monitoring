@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<div class="container">
+  <div class="card admin-card">
+
+    <div class="top-bar">
+      <h2>Admin – Gas Monitoring</h2>
+      <button onclick="logout()">Logout</button>
+    </div>
+
+    <h3>Recent Readings</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Gas Value</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+
+    <h3>Live Chart</h3>
+    <iframe
+      src="https://thingspeak.com/channels/3202976/charts/1?dynamic=true&results=60"
+      frameborder="0"></iframe>
+
+  </div>
+</div>
+
+<script>
+const CHANNEL_ID = "3202976"; // 🔴 change
+const FIELD = "field1";
+
+function loadTable() {
+  fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?results=10`)
+    .then(res => res.json())
+    .then(data => {
+      let rows = "";
+      data.feeds.forEach(f => {
+        let val = f[FIELD];
+        let status = val > 400 ? "Danger" : "Normal";
+        rows += `
+          <tr>
+            <td>${new Date(f.created_at).toLocaleTimeString()}</td>
+            <td>${val}</td>
+            <td>${status}</td>
+          </tr>`;
+      });
+      tableBody.innerHTML = rows;
+    });
+}
+
+function logout() {
+  window.location.href = "index_login.html";
+}
+
+loadTable();
+setInterval(loadTable, 10000);
+</script>
+</body>
+</html>
